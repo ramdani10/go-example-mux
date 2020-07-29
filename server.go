@@ -2,24 +2,31 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/ramdani10/mux-example/repository"
+	"github.com/ramdani10/mux-example/controller"
 	"github.com/ramdani10/mux-example/routes"
+	"github.com/ramdani10/mux-example/services"
+)
+
+var (
+
+	postRepository repository.PostRepository = repository.NewFirestoreRepository()
+	postService services.PostService = services.NewPostService(postRepository)
+	postController controller.PostController = controller.NewPostController(postService)
+	httpRouter routes.Router = routes.NewChiRouter()
 )
 
 func main() {
-	router := mux.NewRouter()
 	const port string = ":8000"
 
-	router.HandleFunc("/", func(resp http.ResponseWriter, request *http.Request){
+	httpRouter.GET("/", func(resp http.ResponseWriter, request *http.Request){
 		fmt.Fprintln(resp, "Up and Running")
 	})
-	router.HandleFunc("/post", routes.GetPosts).Methods("GET")
-	router.HandleFunc("/post", routes.AddPost).Methods("POST")
 
+	httpRouter.GET("/post", postController.GetPosts)
+	httpRouter.POST("/post", postController.AddPost)
 
-	log.Println("server listening port", port)
-	http.ListenAndServe(port,router)
+	httpRouter.SERVE(port)
 }
